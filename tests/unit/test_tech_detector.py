@@ -63,9 +63,6 @@ class TestTechDetector:
         detected_lower = [lang.lower() for lang in data["all_languages"]]
         # .ipynb should be treated as Python, not JSON
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #57: tech detector counts vendored/build-output files"
-    )
     def test_node_modules_excluded(self, detector):
         """Test node_modules/ directory is excluded from counts."""
         files = [
@@ -94,9 +91,6 @@ class TestTechDetector:
 
         # Python should be primary despite vendor files
 
-    @pytest.mark.xfail(
-        strict=True, reason="issue #57: tech detector counts vendored/build-output files"
-    )
     def test_build_directory_excluded(self, detector):
         """Test build directory is excluded."""
         files = [
@@ -109,6 +103,30 @@ class TestTechDetector:
 
         data = result.data
         assert data["primary_language"] == "Python"
+
+    def test_nested_skip_directory_excluded(self, detector):
+        """Test nested skip directories are excluded."""
+        files = [
+            "src/main.py",
+            "src/node_modules/package/index.js",
+        ]
+
+        result = detector.execute({"files": files})
+
+        data = result.data
+        assert data["primary_language"] == "Python"
+
+    def test_lookalike_directory_not_excluded(self, detector):
+        """Test similarly named directories are not excluded."""
+        files = [
+            "src/main.py",
+            "rebuild/app.js",
+        ]
+
+        result = detector.execute({"files": files})
+
+        data = result.data
+        assert "JavaScript" in data["all_languages"]
 
     def test_config_file_detection(self, detector):
         """Test detection from config files."""
